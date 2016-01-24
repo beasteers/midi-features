@@ -32,6 +32,7 @@ class Composer(MarkovChain):
        self.name = name
        self.pieces = []
        self.pitchTM = {}
+       self.durationTM = {}
     
     def addPiece(self, filename, meta={}):
         piece = Piece(filename, meta)
@@ -42,12 +43,13 @@ class Composer(MarkovChain):
     def getLastPiece(self):
         return self.pieces[-1]
         
-    def getTM(self):
+    def getTM(self, order):
         for p in self.pieces:
-            self.setTransitionMatrix(p.notes, self.pitchTM, 3)
+            self.setTransitionMatrix(p.notes, self.pitchTM, order)
+            self.setTransitionMatrix(p.durations, self.durationTM, order)
             
     def generateMidi(self):
-        gen = midiGenerator({'pitches': self.pitchTM }, {'interval': 0.15})
+        gen = midiGenerator({'pitches': self.pitchTM, 'durations': self.durationTM }, {'interval': 0.15})
         gen.start()
 
 
@@ -68,14 +70,19 @@ class Piece(object):
         tick = 0
         meta = {
             'key': 0,
-            'timeSignature':[4, 4]
+            'timeSignature':[4, 4],
+            'BPM': 120,
+            'PPQ': 96
        }
         # activeNotes = {}
+        
+        # print rawmeta
+        # quit()
         
         #pull out meta data
         for m in rawmeta:
             if isinstance(m, midi.events.KeySignatureEvent):
-                meta['key'] = m.data[0] - 256 if m.data[0] > 127 else m.data[0] # key is # of sharps < 0 < # of flats
+                meta['key'] = m.data[0] - 256 if m.data[0] > 127 else m.data[0] # key is # of sharps > 0 > # of flats
                 meta['minor'] = m.get_minor()
             elif isinstance(m, midi.events.TimeSignatureEvent):
                 meta['timeSignature'] = [m.data[0], 2**m.data[1]]
@@ -87,7 +94,9 @@ class Piece(object):
         self.meta = meta
         
         #retrieve normalized key - the minor flag is not reliable in the midi data so it may have to be manually overriden for minor pieces in most cases
-        currentKey = normalizer['note'][str(self.meta['key']+self.meta['minor']*3)] #
+        currentKey = normalizer['note'][str(self.meta['key']+self.meta['minor']*3)] 
+        
+        
         
         #pull out note data
         for n in noteEvents:
@@ -96,10 +105,16 @@ class Piece(object):
             if isinstance(n, midi.events.NoteOnEvent) and n.data[1] != 0:
                 normalized = self.normalizeNote(n.data[0], currentKey)
                 self.notes.append(normalized)
-
+            elif isinstance(n, midi.events.NoteOffEvent) or (len(n.data)>1 and n.data[1] == 0):
+                dur = self.ticksToSecs(n.tick, 360, 120)
+                self.durations.append(dur)
+                
     ### Makes note to relative to tonic  
     def normalizeNote(self, note, normalizer):
         return (note - normalizer) % 12
+    
+    def ticksToSecs(self, ticks, ppq, bpm):
+        return ticks * 60.0 / (ppq*bpm)
 
 
 

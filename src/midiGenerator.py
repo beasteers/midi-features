@@ -13,10 +13,12 @@ class midiGenerator(object):
 
         self.running = False
         
-        self.octave = 4
+        self.octave = 5
         self.pitches = tms['pitches']
+        if tms['durations'] != None: self.durations = tms['durations']
         self.queue = {
-            'pitches': [0 for a in range(self.pitches['order'])] ##should get other way
+            'pitches': self.getRandomQueue(self.pitches['matrix'], []),
+            'durations': self.getRandomQueue(self.durations['matrix'], [])
         }
         
         #initialize midi output
@@ -25,7 +27,17 @@ class midiGenerator(object):
             self.midiout.open_port(0)
         else:
             self.midiout.open_virtual_port("Midi Generator Virtual Port")
-        
+     
+    def getRandomQueue(self, arr, queue):
+        if type(arr) is dict:
+            i = random.choice(arr.keys())
+            if type(arr[i]) is not dict: return queue
+            queue.append(i)
+            print i
+            return self.getRandomQueue(arr[i], queue)
+        else:
+            return queue
+     
     ## traverse down n(length of queue) dimensions and get weighted random value
     def getRecursive(self, arr, queue, j=0):
         if j < len(queue):
@@ -56,7 +68,8 @@ class midiGenerator(object):
     
     def getNextNote(self):
         return self.getRecursive(self.pitches['matrix'], self.queue['pitches'])
-    
+    def getNextDur(self):
+        return self.getRecursive(self.durations['matrix'], self.queue['durations'])
     
     ## Start/Stop Midi
     
@@ -71,9 +84,9 @@ class midiGenerator(object):
     ## Repeated procedure to play midi
     def run(self):
         note = self.getNextNote() + self.octave*12
-        print note
         self.noteOn(note)
-        time.sleep(self.options['interval'])
+        dur = self.getNextDur() if self.durations != None else self.options['interval']
+        time.sleep(dur)
         self.noteOff(note)
     
         
