@@ -26,7 +26,7 @@ class midiGenerator(object):
         else:
             self.midiout.open_virtual_port("Midi Generator Virtual Port")
         
-        
+    ## traverse down n(length of queue) dimensions and get weighted random value
     def getRecursive(self, arr, queue, j=0):
         if j < len(queue):
             return self.getRecursive(arr[queue[j]], queue, j+1)
@@ -35,7 +35,8 @@ class midiGenerator(object):
             del queue[0]
             queue.append(i)
             return i
-        
+    
+    
     def weightedRandom(self, arr):
         weights = list(arr.values())
         rnd = random.random() * sum(weights)
@@ -45,9 +46,8 @@ class midiGenerator(object):
                 return i
     
     
-    ########################
     ## Send midi note on/off
-    ########################
+    
     def noteOn(self, n, vel=127):
         self.midiout.send_message([0x90, n, vel])
     def noteOff(self, n):
@@ -58,9 +58,8 @@ class midiGenerator(object):
         return self.getRecursive(self.pitches['matrix'], self.queue['pitches'])
     
     
-    ########################
     ## Start/Stop Midi
-    ########################    
+    
     def start(self):
         self.running = True
         while self.running:
@@ -69,7 +68,7 @@ class midiGenerator(object):
     def stop(self):
         self.running = False
         
-    
+    ## Repeated procedure to play midi
     def run(self):
         note = self.getNextNote() + self.octave*12
         print note

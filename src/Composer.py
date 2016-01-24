@@ -4,6 +4,7 @@ import midi
 from Markov import MarkovChain
 from midiGenerator import midiGenerator
 
+## Used to adjust notes to their relative keys
 normalizer = {
     'note': {
         '-7': 11,
@@ -59,7 +60,7 @@ class Piece(object):
        
        self.parseFile(filename)
         
-        
+         
     def parseFile(self, filename):
         file = midi.read_midifile(filename)
         rawmeta = file[0]
@@ -84,7 +85,9 @@ class Piece(object):
         #override with manual meta data
         meta.update(self.meta)
         self.meta = meta
-        currentKey = normalizer['note'][str(self.meta['key'])] #+self.meta['minor']*3
+        
+        #retrieve normalized key - the minor flag is not reliable in the midi data so it may have to be manually overriden for minor pieces in most cases
+        currentKey = normalizer['note'][str(self.meta['key']+self.meta['minor']*3)] #
         
         #pull out note data
         for n in noteEvents:
