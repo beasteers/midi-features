@@ -10,11 +10,11 @@ bach.addPiece(parent+"/samples/bach/sonata2-allegro.mid", {
     'name': "Partita No. 1: Courante",
     'minor': 1
 })
-# bach.addPiece(parent+"/samples/bach/partita1-dblcour.mid", {
-#     'name': "Partita No. 1: Double Courante",
-#     'minor': 1
-# })
-bach.getTM(8)
+bach.addPiece(parent+"/samples/bach/partita1-dblcour.mid", {
+    'name': "Partita No. 1: Double Courante",
+    'minor': 1
+})
+bach.generateTM(12)
 bach.generateMidi()
 
 ## Creates a composer object and adds two pieces
@@ -27,6 +27,7 @@ bach.generateMidi()
 #     'name': "Nocturne in Gm",
 #     'minor': 1
 # })
+
 
 ## Calculates the transition matrix of both pieces (merged)
 # chopin.getPitchTM()

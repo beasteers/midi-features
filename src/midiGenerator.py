@@ -7,19 +7,17 @@ import time
 class midiGenerator(object):
     def __init__(self, tms, options={}):
         self.options = {
-            'interval': 0.15
+            'interval': 0.15,
         }
         self.options.update(options)
 
         self.running = False
+        self.tm = tms
+        self.queue = {}
+        self.lastNote = 0
         
-        self.octave = 5
-        self.pitches = tms['pitches']
-        if tms['durations'] != None: self.durations = tms['durations']
-        self.queue = {
-            'pitches': self.getRandomQueue(self.pitches['matrix'], []),
-            'durations': self.getRandomQueue(self.durations['matrix'], [])
-        }
+        for name, tm in self.tm.iteritems():
+            self.queue[name] = self.getRandomQueue(tm['matrix'], [])
         
         #initialize midi output
         self.midiout = rtmidi.MidiOut()
@@ -28,6 +26,8 @@ class midiGenerator(object):
         else:
             self.midiout.open_virtual_port("Midi Generator Virtual Port")
      
+     
+    
     def getRandomQueue(self, arr, queue):
         if type(arr) is dict:
             i = random.choice(arr.keys())
@@ -48,7 +48,6 @@ class midiGenerator(object):
             queue.append(i)
             return i
     
-    
     def weightedRandom(self, arr):
         weights = list(arr.values())
         rnd = random.random() * sum(weights)
@@ -66,10 +65,11 @@ class midiGenerator(object):
         self.midiout.send_message([0x80, n, 0])
        
     
-    def getNextNote(self):
-        return self.getRecursive(self.pitches['matrix'], self.queue['pitches'])
-    def getNextDur(self):
-        return self.getRecursive(self.durations['matrix'], self.queue['durations'])
+    def getNext(self, name, default=None):
+        if name in self.tm:
+            return self.getRecursive(self.tm[name]['matrix'], self.queue[name])
+        else:
+            return default
     
     ## Start/Stop Midi
     
@@ -83,9 +83,16 @@ class midiGenerator(object):
         
     ## Repeated procedure to play midi
     def run(self):
-        note = self.getNextNote() + self.octave*12
+        
+        ### based off pitches matrix
+        #note = self.getNext('pitches') + self.getNext('octaves')*12
+        
+        ### based off interval matrix
+        self.lastNote += self.getNext('interval')
+        note = self.lastNote + self.getNext('octaves')*12
+        
         self.noteOn(note)
-        dur = self.getNextDur() if self.durations != None else self.options['interval']
+        dur = self.getNext('durations', self.options['interval'])
         time.sleep(dur)
         self.noteOff(note)
     
